@@ -19,6 +19,10 @@ class Propriete(Case):
         self.prix_maison = prix_maison
         self.hypothequee = False
     
+    @property
+    def a_hotel(self) -> bool:
+        return (self.nb_maisons == 5)
+
     def calculer_loyer(self) -> int:
         """Calcule le loyer en fonction des maisons/hôtels"""
         if self.hypothequee or not self.proprietaire:
@@ -91,8 +95,7 @@ class Propriete(Case):
             return False
         
         joueur.payer(self.prix_maison)
-        self.nb_maisons = 0
-        self.a_hotel = True
+        self.nb_maisons += 1
         return True
    
     def action(self, joueur: 'Joueur', jeu: 'Monopoly'):
