@@ -1,6 +1,6 @@
 """
-TP Monopoly - Squelette de code
-Durée: 16h sur 4 séances de 4h
+TP Monopoly - Classe principale Monopoly
+Gère une partie de Monopoly
 """
 
 from Global import *
@@ -9,7 +9,9 @@ from IAAgressive import IAAgressive
 
 from Plateau import Plateau
 from Joueur import Joueur
+from Banque import Banque
 from Propriete import Propriete
+from Terrain import Terrain
 from Gare import Gare
 from Compagnie import Compagnie
 from PaquetCartes import PaquetCartes
@@ -30,6 +32,9 @@ class Monopoly:
         self.strategie = strategie or IAAgressive()
         self.stats = StatistiquesPartie()
         self.mode_debug = False
+        
+        # Initialiser la banque
+        self.banque = Banque.get_instance()
     
     def lancer_des(self) -> tuple[int, int]:
         """Lance deux dés et retourne les valeurs"""
@@ -152,34 +157,34 @@ class Monopoly:
                 print("Pas de double. Reste en prison.")
     
     def _proposer_constructions(self, joueur: Joueur):
-        """Propose au joueur de construire sur ses quartiers"""
-        # Trouver les quartiers
-        quartiers = {}
+        """Propose au joueur de construire sur ses quartiers."""
+        # Trouver les terrains constructibles
+        terrains_par_quartier = {}
         for prop in joueur.proprietes:
-            if isinstance(prop, Propriete) and not isinstance(prop, (Gare, Compagnie)):
-                couleur = prop.couleur
-                if joueur.possede_quartier_complet(couleur):
-                    if couleur not in quartiers:
-                        quartiers[couleur] = []
-                    quartiers[couleur].append(prop)
+            if isinstance(prop, Terrain):
+                if prop.quartier and prop.quartier.posseder_quartier(joueur):
+                    couleur = prop.couleur
+                    if couleur not in terrains_par_quartier:
+                        terrains_par_quartier[couleur] = []
+                    terrains_par_quartier[couleur].append(prop)
         
-        if not quartiers:
+        if not terrains_par_quartier:
             return
         
         # Construction automatique par l'IA (stratégie simple)
-        for couleur, proprietes in quartiers.items():
-            for prop in proprietes:
-                if prop.peut_construire(joueur):
+        for couleur, terrains in terrains_par_quartier.items():
+            for terrain in terrains:
+                if terrain.peut_construire(joueur):
                     # Construire si assez d'argent (garder une réserve)
-                    if not prop.a_hotel and joueur.argent >= prop.prix_maison * 2:
-                        if prop.nb_maisons < 4:
-                            if prop.construire_maison(joueur):
+                    if not terrain.a_hotel and joueur.argent >= terrain.prix_maison * 2:
+                        if terrain.nb_maisons < 4:
+                            if terrain.construire_maison(joueur):
                                 if not self.mode_debug:
-                                    print(f"Construction d'une maison sur {prop.nom}")
-                        elif prop.nb_maisons == 4:
-                            if prop.construire_hotel(joueur):
+                                    print(f"Construction d'une maison sur {terrain.nom}")
+                        elif terrain.nb_maisons == 4:
+                            if terrain.construire_hotel(joueur):
                                 if not self.mode_debug:
-                                    print(f"Construction d'un hôtel sur {prop.nom}")
+                                    print(f"Construction d'un hôtel sur {terrain.nom}")
     
     def partie_terminee(self) -> bool:
         """Vérifie si la partie est terminée (un seul joueur restant)"""
@@ -256,11 +261,11 @@ class Monopoly:
                 print("\nPropriétés possédées:")
                 for prop in gagnant.proprietes:
                     info = f"   • {prop.nom}"
-                    if isinstance(prop, Propriete) and not isinstance(prop, (Gare, Compagnie)):
+                    if isinstance(prop, Terrain):
                         if prop.a_hotel:
                             info += " [HÔTEL]"
                         elif prop.nb_maisons > 0:
-                            info += f" [{prop.nb_maisons}]"
+                            info += f" [{prop.nb_maisons}M]"
                     print(info)
         else:
             print(f"Limite de {self.tour_numero} tours atteinte")
